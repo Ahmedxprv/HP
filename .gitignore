@@ -1,0 +1,8 @@
+# Keep Git focused on the Sport X project.
+/*
+!/.gitignore
+!/Desktop/
+/Desktop/*
+!/Desktop/Sport X/
+/Desktop/Sport X/*
+!/Desktop/Sport X/sport-x/
