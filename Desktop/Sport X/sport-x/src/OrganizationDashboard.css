@@ -71,6 +71,19 @@
   padding-top: 22px;
 }
 
+.pending-registration-section {
+  display: grid;
+  gap: 14px;
+}
+
+.pending-registration-section .organization-section-heading {
+  margin-top: 0;
+}
+
+.pending-registration-card {
+  border-color: rgba(125, 249, 197, 0.28);
+}
+
 .organization-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

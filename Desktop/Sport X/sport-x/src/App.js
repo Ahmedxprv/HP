@@ -6,6 +6,8 @@ import TeamDashboard from './TeamDashboard';
 
 const ACCOUNT_STORAGE_KEY = 'sport-x.accounts';
 const SESSION_STORAGE_KEY = 'sport-x.session';
+const TEAM_STORAGE_PREFIX = 'sport-x.team.';
+const ORGANIZATION_STORAGE_PREFIX = 'sport-x.organization.';
 
 const accountTypes = [
   { id: 'player', label: 'Player' },
@@ -16,6 +18,71 @@ const accountTypes = [
 function readStoredValue(key, fallback) {
   const value = window.localStorage.getItem(key);
   return value ? JSON.parse(value) : fallback;
+}
+
+function loadPublicDiscoveries() {
+  const teams = [];
+  const tournaments = [];
+  const teamKeys = new Set();
+
+  try {
+    for (let index = 0; index < window.localStorage.length; index += 1) {
+      const key = window.localStorage.key(index);
+      if (!key) continue;
+
+      if (key.startsWith(TEAM_STORAGE_PREFIX)) {
+        const email = key.slice(TEAM_STORAGE_PREFIX.length);
+        const team = JSON.parse(window.localStorage.getItem(key));
+        const profile = team.profile || {};
+        if (profile.name) {
+          const dedupeKey = `${profile.name.trim().toLowerCase()}|${(profile.sport || '').trim().toLowerCase()}`;
+          if (!teamKeys.has(dedupeKey)) {
+            teams.push({
+              id: email,
+              name: profile.name,
+              sport: profile.sport || '',
+              location: profile.location || '',
+              logoUrl: profile.logoUrl || '',
+            });
+            teamKeys.add(dedupeKey);
+          }
+        }
+      } else if (key.startsWith(ORGANIZATION_STORAGE_PREFIX)) {
+        const organization = JSON.parse(window.localStorage.getItem(key));
+        const organizationName = organization.profile?.name || 'Organization';
+        (organization.tournaments || []).forEach((tournament) => {
+          if (tournament.status === 'Registration Open') {
+            tournaments.push({
+              ...tournament,
+              organizationName,
+              organizationKey: key,
+            });
+          }
+        });
+        (organization.teams || []).forEach((team) => {
+          if (!team.name) return;
+          const dedupeKey = `${team.name.trim().toLowerCase()}|${(team.sport || '').trim().toLowerCase()}`;
+          if (!teamKeys.has(dedupeKey)) {
+            teams.push({
+              id: `${key}-${team.id || team.name}`,
+              name: team.name,
+              sport: team.sport || '',
+              location: team.location || '',
+              logoUrl: team.logoUrl || '',
+            });
+            teamKeys.add(dedupeKey);
+          }
+        });
+      }
+    }
+    return { teams, tournaments, error: '' };
+  } catch (error) {
+    return {
+      teams: [],
+      tournaments: [],
+      error: error instanceof Error ? `Could not load listings: ${error.message}` : 'Could not load listings.',
+    };
+  }
 }
 
 async function hashPassword(password, salt) {
@@ -31,6 +98,16 @@ function App() {
   const [selectedRole, setSelectedRole] = useState('player');
   const [authError, setAuthError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [discoveries, setDiscoveries] = useState(loadPublicDiscoveries);
+  const [selectedTournament, setSelectedTournament] = useState(null);
+  const [registrationTarget, setRegistrationTarget] = useState(null);
+
+  const goHome = () => {
+    setDiscoveries(loadPublicDiscoveries());
+    setSelectedTournament(null);
+    setRegistrationTarget(null);
+    setPage('home');
+  };
 
   const openAuth = (mode, role = 'player') => {
     setAuthMode(mode);
@@ -111,13 +188,13 @@ function App() {
   const handleLogout = () => {
     window.localStorage.removeItem(SESSION_STORAGE_KEY);
     setCurrentUser(null);
-    setPage('home');
+    goHome();
   };
 
   return (
     <div className="app-shell">
       <header className="topbar">
-        <button type="button" className="brand-wrap brand-button" onClick={() => setPage('home')}>
+        <button type="button" className="brand-wrap brand-button" onClick={goHome}>
           <span className="brand-mark">SX</span>
           <span>
             <span className="brand-name">Sport X</span>
@@ -164,38 +241,53 @@ function App() {
                 <span className="eyebrow">For players, teams, and organizers</span>
                 <h1>Find your next move in sport.</h1>
                 <p>
-                  Create your account to build a sports profile, find opportunities, or organize
-                  competitions.
+                  {currentUser
+                    ? `Welcome back, ${currentUser.name}. Explore teams and tournaments or continue to your dashboard.`
+                    : 'Create your account to build a sports profile, find opportunities, or organize competitions.'}
                 </p>
                 <div className="cta-row">
-                  <button
-                    type="button"
-                    className="primary-button"
-                    onClick={() => openAuth('register', 'player')}
-                  >
-                    Create a player account
-                  </button>
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={() => openAuth('register', 'team')}
-                  >
-                    Join as a team
-                  </button>
+                  {currentUser ? (
+                    <button type="button" className="primary-button" onClick={() => setPage('dashboard')}>
+                      View dashboard
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        className="primary-button"
+                        onClick={() => openAuth('register', 'player')}
+                      >
+                        Create a player account
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => openAuth('register', 'team')}
+                      >
+                        Join as a team
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
               <aside className="hero-panel">
                 <div className="feature-card highlight-card">
                   <span className="eyebrow">A better way to connect</span>
                   <h2>Your sport. Your next opportunity.</h2>
-                  <p>Start with your own account. Your details are not prefilled with sample data.</p>
-                  <button
-                    type="button"
-                    className="text-button"
-                    onClick={() => openAuth('register', 'organization')}
-                  >
-                    Set up an organization
-                  </button>
+                  <p>
+                    {currentUser
+                      ? 'Find opportunities and competition listings shared by Sport X members.'
+                      : 'Start with your own account. Your details are not prefilled with sample data.'}
+                  </p>
+                  {!currentUser && (
+                    <button
+                      type="button"
+                      className="text-button"
+                      onClick={() => openAuth('register', 'organization')}
+                    >
+                      Set up an organization
+                    </button>
+                  )}
                 </div>
               </aside>
             </section>
@@ -207,17 +299,129 @@ function App() {
                   <h2>Teams and tournaments</h2>
                 </div>
               </div>
-              <div className="empty-state">
-                <h3>No teams or tournaments yet</h3>
-                <p>When members add listings, they’ll appear here. Nothing is populated with sample records.</p>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={() => openAuth('register')}
-                >
-                  Create an account
-                </button>
-              </div>
+              {discoveries.error && <p className="discovery-error" role="alert">{discoveries.error}</p>}
+              <h3 className="discovery-subheading">Open for registration</h3>
+              {discoveries.tournaments.length ? (
+                <div className="discovery-grid">
+                  {discoveries.tournaments.map((tournament) => (
+                    <article className="discovery-card" key={tournament.id}>
+                      <span className="eyebrow">Registration open</span>
+                      <h3>{tournament.name}</h3>
+                      <p>{[tournament.sport, tournament.venue].filter(Boolean).join(' · ')}</p>
+                      <p>Organized by {tournament.organizationName}</p>
+                      <p>{tournament.startDate || 'Date not set'} · {tournament.capacity || 'No'} team limit</p>
+                      <p>{(tournament.registrations || []).length} teams registered</p>
+                      <button
+                        type="button"
+                        className="text-button discovery-details-button"
+                        onClick={() => {
+                          setSelectedTournament(tournament);
+                          setRegistrationTarget(null);
+                        }}
+                      >
+                        View tournament details
+                      </button>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-state compact-discovery-empty">
+                  <h3>No tournaments open for registration</h3>
+                  <p>New tournaments will appear here when organizations open registration.</p>
+                </div>
+              )}
+
+              {selectedTournament && (
+                <div className="tournament-dialog-backdrop" onClick={() => setSelectedTournament(null)}>
+                  <section
+                    className="tournament-detail-dialog"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="public-tournament-title"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <div className="tournament-detail-heading">
+                      <div>
+                        <span className="eyebrow">Registration open</span>
+                        <h2 id="public-tournament-title">{selectedTournament.name}</h2>
+                      </div>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        aria-label="Close tournament details"
+                        onClick={() => setSelectedTournament(null)}
+                      >
+                        Close
+                      </button>
+                    </div>
+                    <p className="tournament-detail-organizer">Organized by {selectedTournament.organizationName}</p>
+                    <dl className="tournament-detail-grid">
+                      <div><dt>Sport</dt><dd>{selectedTournament.sport || 'Not specified'}</dd></div>
+                      <div><dt>Format</dt><dd>{selectedTournament.format || 'Not specified'}</dd></div>
+                      <div><dt>Venue</dt><dd>{selectedTournament.venue || 'Not specified'}</dd></div>
+                      <div><dt>Start date</dt><dd>{selectedTournament.startDate || 'Not specified'}</dd></div>
+                      <div><dt>Registration deadline</dt><dd>{selectedTournament.registrationDeadline || 'Not specified'}</dd></div>
+                      <div>
+                        <dt>Registered teams</dt>
+                        <dd>{(selectedTournament.registrations || []).length}{selectedTournament.capacity ? ` / ${selectedTournament.capacity}` : ''}</dd>
+                      </div>
+                    </dl>
+                    <p className="tournament-detail-note">
+                      Tournament details are available to all visitors. Teams can register from their team dashboard.
+                    </p>
+                    {currentUser?.role === 'team' ? (
+                      (selectedTournament.registrations || []).some(
+                        (registration) => registration.teamEmail === currentUser.email
+                      ) ? (
+                        <button type="button" className="primary-button" disabled>
+                          Already registered
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="primary-button"
+                          onClick={() => {
+                            setRegistrationTarget({
+                              organizationKey: selectedTournament.organizationKey,
+                              tournamentId: selectedTournament.id,
+                            });
+                            setSelectedTournament(null);
+                            setPage('dashboard');
+                          }}
+                        >
+                          Register your team
+                        </button>
+                      )
+                    ) : (
+                      <button type="button" className="primary-button" disabled>
+                        Team accounts only
+                      </button>
+                    )}
+                  </section>
+                </div>
+              )}
+
+              <h3 className="discovery-subheading">Teams on Sport X</h3>
+              {discoveries.teams.length ? (
+                <div className="discovery-grid">
+                  {discoveries.teams.map((team) => (
+                    <article className="discovery-card discovery-team-card" key={team.id}>
+                      {team.logoUrl ? <img src={team.logoUrl} alt="" /> : (
+                        <span className="discovery-team-mark">{team.name.slice(0, 1).toUpperCase()}</span>
+                      )}
+                      <div>
+                        <h3>{team.name}</h3>
+                        <p>{[team.sport, team.location].filter(Boolean).join(' · ') || 'Team'}</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-state compact-discovery-empty">
+                  <h3>No teams listed yet</h3>
+                  <p>Team profiles will appear here after they are created.</p>
+                </div>
+              )}
             </section>
 
             <section id="features" className="section-block">
@@ -236,13 +440,15 @@ function App() {
                       {type.id === 'team' && 'Set up a team account and manage its information.'}
                       {type.id === 'organization' && 'Create an organization account for your sports activities.'}
                     </p>
-                    <button
-                      type="button"
-                      className="text-button"
-                      onClick={() => openAuth('register', type.id)}
-                    >
-                      Join as {type.label.toLowerCase()}
-                    </button>
+                    {!currentUser && (
+                      <button
+                        type="button"
+                        className="text-button"
+                        onClick={() => openAuth('register', type.id)}
+                      >
+                        Join as {type.label.toLowerCase()}
+                      </button>
+                    )}
                   </article>
                 ))}
               </div>
@@ -344,7 +550,11 @@ function App() {
         )}
 
         {page === 'dashboard' && currentUser && currentUser.role === 'team' && (
-          <TeamDashboard user={currentUser} onLogout={handleLogout} />
+          <TeamDashboard
+            user={currentUser}
+            onLogout={handleLogout}
+            registrationTarget={registrationTarget}
+          />
         )}
       </main>
 

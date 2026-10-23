@@ -279,6 +279,153 @@ select:focus-visible {
   font-size: clamp(1.7rem, 3vw, 2.5rem);
 }
 
+.discovery-subheading {
+  margin: 24px 0 0;
+  font-size: 1.2rem;
+}
+
+.discovery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.discovery-card {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--line-color);
+  border-radius: 16px;
+  background: rgba(17, 27, 45, 0.9);
+}
+
+.discovery-card h3 {
+  margin: 14px 0 8px;
+}
+
+.discovery-card p {
+  margin: 6px 0 0;
+  color: var(--muted-color);
+  line-height: 1.55;
+}
+
+.discovery-details-button {
+  margin-top: 14px;
+}
+
+.tournament-dialog-backdrop {
+  position: fixed;
+  z-index: 10;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(3, 7, 18, 0.78);
+}
+
+.tournament-detail-dialog {
+  width: min(100%, 680px);
+  max-height: min(90vh, 760px);
+  overflow-y: auto;
+  padding: 26px;
+  border: 1px solid var(--line-color);
+  border-radius: 20px;
+  background: var(--panel-color);
+  box-shadow: var(--shadow-soft);
+}
+
+.tournament-detail-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.tournament-detail-heading h2 {
+  margin: 12px 0 0;
+}
+
+.tournament-detail-organizer,
+.tournament-detail-note {
+  color: var(--muted-color);
+  line-height: 1.6;
+}
+
+.tournament-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 22px 0;
+}
+
+.tournament-detail-grid > div {
+  padding: 14px;
+  border: 1px solid var(--line-color);
+  border-radius: 12px;
+  background: rgba(148, 163, 184, 0.06);
+}
+
+.tournament-detail-grid dt {
+  color: var(--muted-color);
+  font-size: 0.85rem;
+}
+
+.tournament-detail-grid dd {
+  margin: 6px 0 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.tournament-detail-note {
+  margin-bottom: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-color);
+}
+
+.discovery-team-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.discovery-team-card h3 {
+  margin-top: 0;
+}
+
+.discovery-team-card img,
+.discovery-team-mark {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  flex: 0 0 54px;
+  border: 1px solid var(--line-color);
+  border-radius: 14px;
+  object-fit: cover;
+}
+
+.discovery-team-mark {
+  background: rgba(125, 249, 197, 0.12);
+  color: var(--accent-color);
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.compact-discovery-empty {
+  padding: 22px;
+}
+
+.compact-discovery-empty p {
+  margin-bottom: 0;
+}
+
+.discovery-error {
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 170, 169, 0.3);
+  border-radius: 11px;
+  background: rgba(255, 170, 169, 0.08);
+  color: #ffaaa9;
+}
+
 .empty-state {
   padding: 30px;
   border: 1px dashed var(--line-color);
@@ -467,7 +614,8 @@ select:focus-visible {
   }
 
   .features-grid,
-  .dashboard-grid {
+  .dashboard-grid,
+  .discovery-grid {
     grid-template-columns: 1fr;
   }
 
@@ -535,5 +683,13 @@ select:focus-visible {
 
   .site-footer {
     flex-direction: column;
+  }
+
+  .tournament-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tournament-detail-dialog {
+    padding: 20px;
   }
 }

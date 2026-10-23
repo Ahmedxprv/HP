@@ -108,7 +108,7 @@ function loadApplications() {
   return applications;
 }
 
-function TeamDashboard({ user, onLogout }) {
+function TeamDashboard({ user, onLogout, registrationTarget }) {
   const [initial] = useState(() => loadTeam(user));
   const [applicationState] = useState(() => {
     try {
@@ -122,7 +122,7 @@ function TeamDashboard({ user, onLogout }) {
   });
   const [data, setData] = useState(initial.data);
   const [applications, setApplications] = useState(applicationState.items);
-  const [section, setSection] = useState('overview');
+  const [section, setSection] = useState(registrationTarget ? 'tournaments' : 'overview');
   const [notice, setNotice] = useState(initial.error || applicationState.error);
   const [noticeIsError, setNoticeIsError] = useState(Boolean(initial.error || applicationState.error));
   const [isSaving, setIsSaving] = useState(false);
@@ -804,7 +804,13 @@ function TeamDashboard({ user, onLogout }) {
             <div><h2>Team tournaments</h2><p>Apply for open tournament registrations and view your entries.</p></div>
           </div>
           <h3>Registration open</h3>
-          <TournamentList tournaments={upcomingTournaments} squad={data.squad} registrations={data.tournamentRegistrations} onRegister={registerForTournament} />
+          <TournamentList
+            tournaments={upcomingTournaments}
+            squad={data.squad}
+            registrations={data.tournamentRegistrations}
+            onRegister={registerForTournament}
+            registrationTarget={registrationTarget}
+          />
           <h3 className="team-subheading">Ongoing tournaments</h3>
           <TournamentList tournaments={ongoingTournaments} squad={data.squad} registrations={data.tournamentRegistrations} onRegister={registerForTournament} />
           <h3 className="team-subheading">My tournament registrations</h3>
@@ -868,7 +874,7 @@ function ApplicationList({ applications, onUpdate }) {
   );
 }
 
-function TournamentList({ tournaments, squad, registrations, onRegister }) {
+function TournamentList({ tournaments, squad, registrations, onRegister, registrationTarget }) {
   const [captains, setCaptains] = useState({});
 
   if (!tournaments.length) {
@@ -907,6 +913,8 @@ function TournamentList({ tournaments, squad, registrations, onRegister }) {
                   <span>Select tournament captain</span>
                   <select
                     value={captains[tournament.id] || ''}
+                    autoFocus={registrationTarget?.tournamentId === tournament.id
+                      && registrationTarget?.organizationKey === tournament.organizationKey}
                     onChange={(event) => setCaptains((current) => ({
                       ...current,
                       [tournament.id]: event.target.value,

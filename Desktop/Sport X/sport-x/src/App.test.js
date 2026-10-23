@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import App from './App';
 import { TextEncoder } from 'util';
 
@@ -35,9 +35,109 @@ test('shows empty discovery states instead of sample records', () => {
   render(<App />);
 
   expect(screen.getByText(/find your next move in sport/i)).toBeInTheDocument();
-  expect(screen.getByText(/no teams or tournaments yet/i)).toBeInTheDocument();
+  expect(screen.getByText(/no teams listed yet/i)).toBeInTheDocument();
+  expect(screen.getByText(/no tournaments open for registration/i)).toBeInTheDocument();
   expect(screen.queryByText(/northbridge fc/i)).not.toBeInTheDocument();
   expect(screen.queryByText(/12k\+/i)).not.toBeInTheDocument();
+});
+
+test('shows saved open tournaments and teams on home, without join prompts for signed-in users', () => {
+  window.localStorage.setItem('sport-x.session', JSON.stringify({
+    email: 'member@example.com',
+    name: 'Alex Member',
+    role: 'player',
+  }));
+  window.localStorage.setItem('sport-x.team.rovers@example.com', JSON.stringify({
+    profile: { name: 'Rovers FC', sport: 'Football', location: 'York' },
+  }));
+  window.localStorage.setItem('sport-x.organization.organizer@example.com', JSON.stringify({
+    profile: { name: 'City Sports Association' },
+    teams: [{ id: 'bears', name: 'City Bears', sport: 'Rugby', location: 'Leeds' }],
+    tournaments: [
+      {
+        id: 'open-cup',
+        name: 'Open Cup',
+        sport: 'Football',
+        format: 'Round robin',
+        venue: 'City Ground',
+        startDate: '2026-11-10',
+        registrationDeadline: '2026-11-01',
+        capacity: 8,
+        status: 'Registration Open',
+        registrations: [
+          { teamEmail: 'rovers@example.com', teamName: 'Rovers FC', status: 'Submitted' },
+          { teamEmail: 'city@example.com', teamName: 'City United', status: 'Accepted' },
+        ],
+      },
+      {
+        id: 'draft-cup',
+        name: 'Draft Cup',
+        status: 'Draft',
+      },
+    ],
+  }));
+
+  render(<App />);
+  fireEvent.click(screen.getByRole('button', { name: /sport x sports talent platform/i }));
+
+  expect(screen.getByRole('heading', { name: /open cup/i })).toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: /draft cup/i })).not.toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: /rovers fc/i })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: /city bears/i })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: /view tournament details/i }));
+  const tournamentDialog = screen.getByRole('dialog', { name: /open cup/i });
+  expect(within(tournamentDialog).getByText('2026-11-01')).toBeInTheDocument();
+  expect(within(tournamentDialog).getByText('Round robin')).toBeInTheDocument();
+  expect(within(tournamentDialog).getByText('2 / 8')).toBeInTheDocument();
+  expect(within(tournamentDialog).getByRole('button', { name: /team accounts only/i })).toBeDisabled();
+  fireEvent.click(within(tournamentDialog).getByRole('button', { name: /close tournament details/i }));
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /view dashboard/i })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /join|create a player account|set up an organization/i })).not.toBeInTheDocument();
+});
+
+test('lets a team account open the selected tournament registration form from home', () => {
+  window.localStorage.setItem('sport-x.session', JSON.stringify({
+    email: 'rovers@example.com',
+    name: 'Rovers FC',
+    role: 'team',
+  }));
+  window.localStorage.setItem('sport-x.team.rovers@example.com', JSON.stringify({
+    profile: { name: 'Rovers FC', sport: 'Football' },
+    squad: [{ name: 'Jamie Striker', role: 'Forward' }],
+    vacancies: [],
+  }));
+  window.localStorage.setItem('sport-x.organization.organizer@example.com', JSON.stringify({
+    profile: { name: 'City Sports Association' },
+    tournaments: [{
+      id: 'open-cup',
+      name: 'Open Cup',
+      sport: 'Football',
+      format: 'Round robin',
+      venue: 'City Ground',
+      startDate: '2026-11-10',
+      registrationDeadline: '2026-11-01',
+      capacity: 8,
+      status: 'Registration Open',
+      registrations: [],
+      standings: [],
+    }],
+    teams: [],
+    openings: [],
+  }));
+
+  render(<App />);
+  fireEvent.click(screen.getByRole('button', { name: /sport x sports talent platform/i }));
+  fireEvent.click(screen.getByRole('button', { name: /view tournament details/i }));
+
+  const tournamentDialog = screen.getByRole('dialog', { name: /open cup/i });
+  expect(within(tournamentDialog).getByRole('button', { name: /register your team/i })).toBeEnabled();
+  fireEvent.click(within(tournamentDialog).getByRole('button', { name: /register your team/i }));
+
+  expect(screen.getByRole('heading', { name: /team tournaments/i })).toBeInTheDocument();
+  const captainSelect = screen.getByLabelText(/select tournament captain/i);
+  expect(captainSelect).toHaveFocus();
+  expect(within(captainSelect).getByRole('option', { name: /jamie striker/i })).toBeInTheDocument();
 });
 
 test('registers a user and allows that user to log in again', async () => {
@@ -420,9 +520,31 @@ test('shows a team workspace with profile, roster, vacancies, and tournament cap
   fireEvent.change(screen.getByLabelText(/confirm password/i), { target: { value: 'securepass123' } });
   fireEvent.click(screen.getByRole('button', { name: /create account/i }));
   expect(await screen.findByRole('heading', { name: /city sports association/i })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: /^tournaments$/i }));
+  expect(screen.getByText(/pending team registrations/i)).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: /rovers fc/i })).toBeInTheDocument();
+  expect(screen.getByText(/open cup · captain: jamie striker/i)).toBeInTheDocument();
+
+  const updatedOrganization = {
+    ...JSON.parse(window.localStorage.getItem('sport-x.organization.organizer@example.com')),
+  };
+  updatedOrganization.tournaments[0].registrations.push({
+    teamEmail: 'bears@example.com',
+    teamName: 'City Bears',
+    captain: 'Taylor Captain',
+    status: 'Submitted',
+    submittedAt: '2026-10-23T00:00:00.000Z',
+  });
+  const organizationStorageKey = 'sport-x.organization.organizer@example.com';
+  window.localStorage.setItem(organizationStorageKey, JSON.stringify(updatedOrganization));
+  const storageEvent = new Event('storage');
+  Object.defineProperty(storageEvent, 'key', { value: organizationStorageKey });
+  act(() => window.dispatchEvent(storageEvent));
+  expect(await screen.findByText(/new team tournament registration received/i)).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: /city bears/i })).toBeInTheDocument();
+
+  fireEvent.click(screen.getAllByRole('button', { name: /review open cup registration/i })[0]);
   fireEvent.click(screen.getByRole('button', { name: /open cup/i }));
-  fireEvent.click(screen.getByRole('button', { name: /approve/i }));
+  fireEvent.click(screen.getAllByRole('button', { name: /approve/i })[0]);
   expect(await screen.findByText(/team registration accepted/i)).toBeInTheDocument();
 
   const approvedOrganization = JSON.parse(window.localStorage.getItem('sport-x.organization.organizer@example.com'));

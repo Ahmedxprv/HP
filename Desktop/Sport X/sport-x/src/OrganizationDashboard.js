@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import './OrganizationDashboard.css';
 
 const DATA_KEY_PREFIX = 'sport-x.organization.';
@@ -25,10 +25,26 @@ function emptyOrganization(user) {
   };
 }
 
+function normalizeOrganization(data, user) {
+  const saved = data && typeof data === 'object' ? data : {};
+  const organization = { ...emptyOrganization(user), ...saved };
+  organization.profile = { ...emptyOrganization(user).profile, ...(saved.profile || {}) };
+  organization.tournaments = Array.isArray(saved.tournaments)
+    ? saved.tournaments.map((tournament) => ({
+      ...tournament,
+      registrations: Array.isArray(tournament.registrations) ? tournament.registrations : [],
+      standings: Array.isArray(tournament.standings) ? tournament.standings : [],
+    }))
+    : [];
+  organization.teams = Array.isArray(saved.teams) ? saved.teams : [];
+  organization.openings = Array.isArray(saved.openings) ? saved.openings : [];
+  return organization;
+}
+
 function loadOrganization(user) {
   try {
     const stored = window.localStorage.getItem(`${DATA_KEY_PREFIX}${user.email}`);
-    return { data: stored ? JSON.parse(stored) : emptyOrganization(user), error: '' };
+    return { data: normalizeOrganization(stored ? JSON.parse(stored) : {}, user), error: '' };
   } catch (error) {
     return {
       data: emptyOrganization(user),
@@ -45,6 +61,41 @@ function OrganizationDashboard({ user, onLogout }) {
   const [noticeIsError, setNoticeIsError] = useState(Boolean(initial.error));
   const [isSaving, setIsSaving] = useState(false);
   const [selectedTournament, setSelectedTournament] = useState('');
+  const pendingRegistrations = data.tournaments.flatMap((tournament) =>
+    tournament.registrations
+      .filter((registration) => registration.status === 'Submitted')
+      .map((registration) => ({ ...registration, tournamentId: tournament.id, tournamentName: tournament.name }))
+  );
+
+  useEffect(() => {
+    const organizationKey = `${DATA_KEY_PREFIX}${user.email}`;
+    const handleStorage = (event) => {
+      if (event.key !== organizationKey) return;
+      const refreshed = loadOrganization(user);
+      if (refreshed.error) {
+        setNotice(refreshed.error);
+        setNoticeIsError(true);
+        return;
+      }
+
+      const previousPendingCount = data.tournaments.reduce(
+        (count, tournament) => count + tournament.registrations.filter((registration) => registration.status === 'Submitted').length,
+        0
+      );
+      const nextPendingCount = refreshed.data.tournaments.reduce(
+        (count, tournament) => count + tournament.registrations.filter((registration) => registration.status === 'Submitted').length,
+        0
+      );
+      setData(refreshed.data);
+      if (nextPendingCount > previousPendingCount) {
+        setNotice('New team tournament registration received.');
+        setNoticeIsError(false);
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [data, user]);
 
   const persist = (nextData, message) => {
     setIsSaving(true);
@@ -230,7 +281,41 @@ function OrganizationDashboard({ user, onLogout }) {
               <strong>{data.teams.length}</strong>
               <span>Managed teams</span>
             </article>
+            <article className="organization-metric">
+              <strong>{pendingRegistrations.length}</strong>
+              <span>Pending team registrations</span>
+            </article>
           </div>
+
+          {pendingRegistrations.length > 0 && (
+            <section className="pending-registration-section" aria-label="Pending team registrations">
+              <div className="organization-section-heading">
+                <div>
+                  <h2>New team registrations</h2>
+                  <p>Review teams waiting for your tournament approval.</p>
+                </div>
+              </div>
+              <div className="organization-card-grid">
+                {pendingRegistrations.map((registration) => (
+                  <article className="organization-card pending-registration-card" key={`${registration.tournamentId}-${registration.teamEmail}`}>
+                    <span className="tournament-status registration-open">New registration</span>
+                    <h3>{registration.teamName}</h3>
+                    <p>{registration.tournamentName} · Captain: {registration.captain}</p>
+                    <button
+                      type="button"
+                      className="text-button"
+                      onClick={() => {
+                        setSelectedTournament(registration.tournamentId);
+                        setSection('tournaments');
+                      }}
+                    >
+                      Review {registration.tournamentName} registration
+                    </button>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
 
           <div className="organization-section-heading">
             <div>
