@@ -20,6 +20,9 @@
 .DS_Store
 Thumbs.db
 
+# editor settings
+.vscode/
+
 # package manager logs
 npm-debug.log*
 yarn-debug.log*
