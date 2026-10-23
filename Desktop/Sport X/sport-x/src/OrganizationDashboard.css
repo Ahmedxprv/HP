@@ -1,0 +1,356 @@
+.organization-workspace {
+  min-height: 620px;
+}
+
+.organization-header,
+.organization-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.organization-header {
+  margin-bottom: 24px;
+}
+
+.organization-header h1 {
+  margin: 12px 0 4px;
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+
+.organization-header p,
+.organization-section-heading p,
+.organization-form > div > p,
+.organization-card > p {
+  margin: 6px 0 0;
+  color: var(--muted-color);
+  line-height: 1.55;
+}
+
+.organization-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line-color);
+}
+
+.organization-nav-button {
+  padding: 10px 14px;
+  border: 1px solid var(--line-color);
+  border-radius: 11px;
+  background: rgba(148, 163, 184, 0.07);
+  color: var(--muted-color);
+}
+
+.organization-nav-button:hover,
+.organization-nav-button.active {
+  border-color: rgba(125, 249, 197, 0.4);
+  background: rgba(125, 249, 197, 0.1);
+  color: var(--accent-color);
+}
+
+.organization-notice {
+  padding: 12px 14px;
+  border: 1px solid rgba(125, 249, 197, 0.25);
+  border-radius: 11px;
+  background: rgba(125, 249, 197, 0.08);
+  color: var(--accent-color);
+}
+
+.organization-notice.error {
+  border-color: rgba(255, 170, 169, 0.3);
+  background: rgba(255, 170, 169, 0.08);
+  color: #ffaaa9;
+}
+
+.organization-content {
+  display: grid;
+  gap: 22px;
+  padding-top: 22px;
+}
+
+.organization-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.organization-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-height: 112px;
+  padding: 18px;
+  border: 1px solid var(--line-color);
+  border-radius: 15px;
+  background: rgba(21, 34, 56, 0.86);
+}
+
+.organization-metric strong {
+  font-size: 1.9rem;
+}
+
+.organization-metric span {
+  color: var(--muted-color);
+}
+
+.organization-section-heading {
+  margin-top: 8px;
+}
+
+.organization-section-heading h2,
+.organization-form h2 {
+  margin: 0;
+}
+
+.team-overview-heading {
+  padding-top: 8px;
+}
+
+.organization-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.organization-card {
+  padding: 20px;
+  border: 1px solid var(--line-color);
+  border-radius: 16px;
+  background: rgba(17, 27, 45, 0.9);
+}
+
+.organization-card h3 {
+  margin: 12px 0 8px;
+}
+
+.organization-card .text-button {
+  margin-top: 8px;
+}
+
+.tournament-status {
+  display: inline-flex;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--muted-color);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.tournament-status.registration-open,
+.tournament-status.ongoing {
+  background: rgba(125, 249, 197, 0.12);
+  color: var(--accent-color);
+}
+
+.tournament-status.completed {
+  background: rgba(125, 160, 249, 0.12);
+  color: #a9c0ff;
+}
+
+.empty-state.compact-empty {
+  padding: 22px;
+}
+
+.organization-form {
+  display: grid;
+  gap: 18px;
+  margin-top: 22px;
+  padding: 22px;
+  border: 1px solid var(--line-color);
+  border-radius: 16px;
+  background: rgba(17, 27, 45, 0.68);
+}
+
+.organization-form h3 {
+  margin: 0;
+}
+
+.organization-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.organization-form label,
+.standing-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--muted-color);
+}
+
+.organization-form input,
+.organization-form select,
+.organization-form textarea,
+.organization-table select,
+.standing-form input {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-color);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.9);
+  color: var(--text-color);
+}
+
+.organization-form textarea {
+  resize: vertical;
+}
+
+.wide-field {
+  grid-column: 1 / -1;
+}
+
+.organization-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--line-color);
+  border-radius: 14px;
+}
+
+.organization-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 620px;
+}
+
+.organization-table th,
+.organization-table td {
+  padding: 13px 15px;
+  border-bottom: 1px solid var(--line-color);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.organization-table th {
+  color: var(--muted-color);
+  font-size: 0.83rem;
+  font-weight: 600;
+}
+
+.organization-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.organization-table select {
+  min-width: 165px;
+}
+
+.table-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent-color);
+  font-weight: 600;
+}
+
+.table-link:hover {
+  text-decoration: underline;
+}
+
+.registration-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.danger-text {
+  color: #ffaaa9;
+}
+
+.standings-section {
+  display: grid;
+  gap: 16px;
+  margin-top: 12px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line-color);
+}
+
+.standing-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 13px;
+}
+
+.standing-form button {
+  min-height: 42px;
+}
+
+.empty-inline {
+  margin: 0;
+  color: var(--muted-color);
+}
+
+.team-staff {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.team-staff span {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--muted-color);
+  overflow-wrap: anywhere;
+}
+
+.team-staff strong {
+  color: var(--text-color);
+  font-size: 0.82rem;
+}
+
+.organization-card h4 {
+  margin: 14px 0 8px;
+}
+
+.roster-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--muted-color);
+}
+
+.signed-in-label {
+  color: var(--muted-color);
+  text-transform: capitalize;
+}
+
+@media (max-width: 850px) {
+  .organization-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .organization-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .organization-header,
+  .organization-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .organization-metrics,
+  .organization-form-grid,
+  .standing-form {
+    grid-template-columns: 1fr;
+  }
+
+  .wide-field {
+    grid-column: auto;
+  }
+
+  .team-staff {
+    grid-template-columns: 1fr;
+  }
+}
